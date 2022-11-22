@@ -7,6 +7,7 @@
 #include "MoveBatch.h"
 #include "RobotArmIK.h"
 #include "Encoder.h"
+#include "IK_Control.h"
 
 
 enum Mode
@@ -25,6 +26,7 @@ SineStepper sineStepper3(STEPPER3_STEP_PIN, STEPPER3_DIR_PIN, /*id:*/ 2);
 SineStepper sineStepper4(STEPPER4_STEP_PIN, STEPPER4_DIR_PIN, /*id:*/ 3);
 SineStepperController sineStepperController(/*endlessRepeat:*/ false);
 RobotArmIK robotArmIK(43.0, 60.0, 70.0, 54.0);
+IK_Control IKControl(55.3, 83.0, 83.0, 49.5);
 MoveBatch mb;
 
 
@@ -228,6 +230,25 @@ void serialControl(MoveBatch mb)
     sineStepperController.addMoveBatch(mb);
 }
 
+void runIKTest(MoveBatch mb)
+{
+    mb = IKControl.runIKControl(120.0, -90.0, 60.0, mb);
+    // mb.moveDuration = 3;
+    Serial.println("Moving to the pose1...");
+    sineStepperController.addMoveBatch(mb);
+    
+    mb = IKControl.runIKControl(120.0, -90.0, 40.0, mb);
+    mb.moveDuration = 1;
+    Serial.println("Moving to the pose2...");
+    sineStepperController.addMoveBatch(mb);
+
+    mb = IKControl.runIKControl(120.0, -90.0, 60.0, mb);
+    // mb.moveDuration = 1;
+    Serial.println("Moving to the pose3...");
+    sineStepperController.addMoveBatch(mb);
+    
+}
+
 void setup()
 {
     Serial.begin(19200); //boundrate 115200
@@ -250,7 +271,8 @@ void setup()
     //drillingLeft(mb);
     //slidingAlongFloor(mb);
     // jointTesting(mb);
-    serialControl(mb);
+    // serialControl(mb);
+    runIKTest(mb);
 
 
     // go back to gome position START
@@ -276,6 +298,7 @@ void setup()
     timerAlarmEnable(timer);
 }
 
+// Split the info received from Serial into several spring
 String getValue(String data, char separator, int index)
 {
   int found = 0;
@@ -307,12 +330,12 @@ void loop()
         {
             sineStepperController.addMoveBatch(mb);
             addFlag = false;
-            Serial.print("Control Update!");
+            Serial.println("Received Control Update!");
         }
         portEXIT_CRITICAL(&timerMux);
 
-        Serial.print("pos1:");
-        Serial.println(pos1);
+        // Serial.print("pos1:");
+        // Serial.println(pos1);
 
         // delay(10);
         if(Serial.available()) //if the uart is not NULL
@@ -326,7 +349,7 @@ void loop()
             }
         }        
 
-        delay(20);
+        delay(10);
         
     }
 }
